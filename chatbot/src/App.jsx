@@ -1,7 +1,7 @@
 import React from 'react';
 import defaultDetaset from './dataset'
 import './assets/css/style.css'
-import { AnswersList } from './components/index'
+import { AnswersList, Chats, FormDialog } from './components/index'
 
 export default class App extends React.Component {
     constructor (props) {
@@ -13,25 +13,89 @@ export default class App extends React.Component {
             dataset: defaultDetaset,
             open: false,
         }
+        this.selectAnswer = this.selectAnswer.bind(this)
+        this.handleClickOpen = this.handleClickOpen.bind(this)
+        this.handleClose = this.handleClose.bind(this)
     }
 
-    initAnswer () {
-        const initDetaset = this.state.dataset[this.state.currentId]
-        const initAnswers = initDetaset.answers
+    displayNextQuestion (nextQuestionId) {
+        const chats = this.state.chats
+        chats.push({
+            text: this.state.dataset[nextQuestionId].question,
+            type: 'question',
+        })
+
         this.setState({
-            answers:initAnswers,
+            answers: this.state.dataset[nextQuestionId].answers,
+            chats: chats,
+            currentId: nextQuestionId,
         })
     }
 
+    selectAnswer (selectedAnswer, nextQuestionId) {
+        switch (true) {
+            case ('init' === nextQuestionId):
+                setTimeout(() => this.displayNextQuestion(nextQuestionId), 500);
+                break
+
+            case (/^httpsL*/.test(nextQuestionId)):
+                const a = document.createElement('a')
+                a.href = nextQuestionId
+                a.target = '_blank'
+                a.click()
+                break
+
+            case ('contact' === nextQuestionId):
+                this.handleClickOpen()
+                break
+                
+            default:
+                const chats = this.state.chats
+                chats.push({
+                    text:  selectedAnswer,
+                    type: 'answer',
+                })
+        
+                this.setState({
+                    chats: chats,
+                })
+
+                setTimeout(() => {this.displayNextQuestion(nextQuestionId)}, 1000)
+                break
+        }
+    }
+
+    handleClickOpen = () => {
+        this.setState({
+            open: true,
+        })
+    };
+  
+    handleClose = () => {
+        this.setState({
+            open: false,
+        })
+    };
+
     componentDidMount () {
-        this.initAnswer()
+        const initAnswer = ''
+        this.selectAnswer(initAnswer, this.state.currentId)
+    }
+
+    componentDidUpdate () {
+        const scrollArea = document.getElementById('scroll-area')
+        if (scrollArea) {
+            scrollArea.scrollTop = scrollArea.scrollHeight
+        }
     }
 
     render () {
         return (
             <div className='c-section'>
                 <div className='c-box'>
-                    <AnswersList answers={this.state.answers}/>
+                    <Chats chats={this.state.chats} />
+                    <AnswersList answers={this.state.answers} select={this.selectAnswer} />
+                    <FormDialog open={this.state.open} handleClose={this.handleClose}/>
                 </div>
             </div>
         )
